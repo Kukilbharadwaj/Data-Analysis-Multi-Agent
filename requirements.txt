@@ -1,0 +1,31 @@
+# Multi-Agent AI Data Analyst Platform - Requirements
+
+# Core Framework
+fastapi
+uvicorn
+python-multipart
+
+# AI/ML
+groq
+langgraph
+langchain
+langchain-core
+
+# Data Processing
+pandas
+openpyxl
+chardet
+numpy
+
+# Authentication & Security
+bcrypt>=4.0.0,<5.0.0
+python-jose[cryptography]
+pydantic[email]
+
+# Database
+sqlalchemy
+
+# Email/SMS (for OTP)
+python-dotenv
+aiosmtplib
+email-validator

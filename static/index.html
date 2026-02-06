@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Agent AI Data Analyst Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .agent-card {
+            transition: all 0.3s ease;
+        }
+        .agent-card.active {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+        }
+        .agent-card.completed {
+            border-color: #10b981;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 min-h-screen text-white">
+    
+    <!-- Header -->
+    <header class="bg-gray-800 bg-opacity-50 backdrop-blur-lg border-b border-gray-700">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-brain text-blue-400 text-3xl"></i>
+                    <h1 class="text-2xl font-bold">Multi-Agent AI Data Analyst</h1>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        <span class="text-sm text-gray-300">System Active</span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-sm">
+                            <i class="fas fa-user-circle text-blue-400 mr-2"></i>
+                            <span id="userEmail">Loading...</span>
+                        </div>
+                        <a href="/admin" id="adminLink" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-semibold transition hidden">
+                            <i class="fas fa-crown mr-2"></i>Admin Panel
+                        </a>
+                        <button 
+                            onclick="logout()" 
+                            class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm font-semibold transition"
+                        >
+                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        
+        <!-- Upload Section -->
+        <div class="bg-gray-800 bg-opacity-50 backdrop-blur-lg rounded-xl p-8 mb-8 border border-gray-700">
+            <h2 class="text-xl font-semibold mb-6 flex items-center">
+                <i class="fas fa-upload mr-3 text-blue-400"></i>
+                Upload Dataset
+            </h2>
+            
+            <div id="uploadArea" class="border-2 border-dashed border-gray-600 rounded-lg p-12 text-center hover:border-blue-500 transition-all cursor-pointer">
+                <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" class="hidden">
+                <i class="fas fa-cloud-upload-alt text-6xl text-gray-500 mb-4"></i>
+                <p class="text-lg mb-2">Click to upload or drag and drop</p>
+                <p class="text-sm text-gray-400">Supports CSV and XLSX files</p>
+            </div>
+            
+            <div id="fileInfo" class="mt-4 hidden">
+                <div class="bg-gray-700 rounded-lg p-4 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-file-csv text-green-400 text-2xl"></i>
+                        <div>
+                            <p class="font-semibold" id="fileName"></p>
+                            <p class="text-sm text-gray-400" id="fileDetails"></p>
+                        </div>
+                    </div>
+                    <button onclick="analyzeData()" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-semibold transition-all flex items-center space-x-2">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Analyze</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Section -->
+        <div id="progressSection" class="bg-gray-800 bg-opacity-50 backdrop-blur-lg rounded-xl p-8 mb-8 border border-gray-700 hidden">
+            <h2 class="text-xl font-semibold mb-6 flex items-center">
+                <i class="fas fa-cogs mr-3 text-blue-400"></i>
+                Analysis Progress
+            </h2>
+            
+            <!-- Progress Bar -->
+            <div class="mb-8">
+                <div class="flex justify-between text-sm mb-2">
+                    <span id="progressText">Initializing...</span>
+                    <span id="progressPercent">0%</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-3">
+                    <div id="progressBar" class="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Simple Status Message -->
+            <div class="text-center py-8">
+                <i class="fas fa-cog fa-spin text-6xl text-blue-400 mb-4"></i>
+                <p class="text-xl text-gray-300">Analyzing your data...</p>
+                <p class="text-sm text-gray-500 mt-2">This may take a few moments</p>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden">
+            
+            <!-- Success Banner -->
+            <div class="bg-gradient-to-r from-green-600 to-blue-600 rounded-xl p-6 mb-6 fade-in">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-check-circle text-4xl"></i>
+                    <div>
+                        <h2 class="text-2xl font-bold">Analysis Complete!</h2>
+                        <p class="text-gray-100 mt-1" id="datasetSummary"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Findings -->
+            <div class="bg-gray-800 bg-opacity-50 backdrop-blur-lg rounded-xl p-8 mb-6 border border-gray-700 fade-in">
+                <h2 class="text-2xl font-bold mb-6 flex items-center">
+                    <i class="fas fa-chart-line mr-3 text-blue-400"></i>
+                    Key Findings
+                </h2>
+                <div id="keyFindings" class="space-y-3"></div>
+            </div>
+
+            <!-- Recommendations -->
+            <div class="bg-gray-800 bg-opacity-50 backdrop-blur-lg rounded-xl p-8 mb-6 border border-gray-700 fade-in">
+                <h2 class="text-2xl font-bold mb-6 flex items-center">
+                    <i class="fas fa-lightbulb mr-3 text-yellow-400"></i>
+                    Recommendations
+                </h2>
+                <div id="recommendations" class="space-y-3"></div>
+            </div>
+
+            <!-- New Analysis Button -->
+            <div class="text-center mt-8">
+                <button onclick="resetAnalysis()" class="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-lg font-semibold transition-all">
+                    <i class="fas fa-upload mr-2"></i>
+                    Analyze Another Dataset
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 bg-opacity-50 backdrop-blur-lg border-t border-gray-700 mt-12">
+        <div class="container mx-auto px-6 py-4 text-center text-gray-400 text-sm">
+            <p>Powered by Multi-Agent AI System | LangGraph + Groq</p>
+        </div>
+    </footer>
+
+    <script>
+        let uploadedFile = null;
+        let currentFilename = null;
+
+        // File upload handling
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.onclick = () => fileInput.click();
+
+        fileInput.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                await uploadFile(file);
+            }
+        };
+
+        // Drag and drop
+        uploadArea.ondragover = (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('border-blue-500');
+        };
+
+        uploadArea.ondragleave = () => {
+            uploadArea.classList.remove('border-blue-500');
+        };
+
+        uploadArea.ondrop = async (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('border-blue-500');
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                await uploadFile(file);
+            }
+        };
+
+        // Upload file to backend
+        async function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentFilename = data.filename;
+                    document.getElementById('fileName').textContent = file.name;
+                    document.getElementById('fileDetails').textContent = 
+                        `${data.rows} rows × ${data.columns} columns`;
+                    document.getElementById('fileInfo').classList.remove('hidden');
+                    uploadArea.classList.add('hidden');
+                } else {
+                    alert('Error uploading file');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Analyze data
+        async function analyzeData() {
+            if (!currentFilename) return;
+
+            // Show progress section
+            document.getElementById('progressSection').classList.remove('hidden');
+            document.getElementById('resultsSection').classList.add('hidden');
+
+            // Reset progress
+            updateProgress(0, 'Starting analysis...');
+
+            // Connect to SSE endpoint
+            const eventSource = new EventSource(`/api/analyze/${currentFilename}`);
+
+            eventSource.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                if (data.type === 'start') {
+                    updateProgress(5, 'Initializing analysis...');
+                }
+                else if (data.type === 'progress') {
+                    const progress = (data.step / data.total_steps) * 100;
+                    updateProgress(progress, data.message);
+                }
+                else if (data.type === 'complete') {
+                    updateProgress(100, 'Analysis complete!');
+                    displayResults(data.results);
+                    eventSource.close();
+                }
+                else if (data.type === 'error') {
+                    alert('Error: ' + data.message);
+                    eventSource.close();
+                }
+            };
+
+            eventSource.onerror = () => {
+                eventSource.close();
+            };
+        }
+
+        // Update progress bar
+        function updateProgress(percent, text) {
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressPercent').textContent = Math.round(percent) + '%';
+            document.getElementById('progressText').textContent = text;
+        }
+
+        // Update agent status
+        function updateAgentStatus(agentName, status) {
+            const card = document.getElementById(`agent-${agentName}`);
+            const statusDot = document.getElementById(`status-${agentName}`);
+            const statusText = document.getElementById(`text-${agentName}`);
+
+            if (status === 'active') {
+                card.classList.add('active');
+                statusDot.className = 'w-2 h-2 bg-blue-400 rounded-full animate-pulse';
+                statusText.textContent = 'Working...';
+                statusText.className = 'text-blue-400';
+            }
+            else if (status === 'completed') {
+                card.classList.remove('active');
+                card.classList.add('completed');
+                statusDot.className = 'w-2 h-2 bg-green-400 rounded-full';
+                statusText.textContent = 'Completed';
+                statusText.className = 'text-green-400';
+            }
+        }
+
+        // Display results
+        function displayResults(results) {
+            document.getElementById('resultsSection').classList.remove('hidden');
+            
+            // Dataset summary
+            document.getElementById('datasetSummary').textContent = results.dataset_summary;
+            
+            // Key findings as bullet points
+            const findingsHtml = results.key_findings.map(finding => `
+                <div class="flex items-start space-x-3 bg-gray-900 p-4 rounded-lg">
+                    <i class="fas fa-check-circle text-green-400 mt-1"></i>
+                    <p class="text-gray-100 text-lg">${finding}</p>
+                </div>
+            `).join('');
+            document.getElementById('keyFindings').innerHTML = findingsHtml;
+            
+            // Recommendations as bullet points
+            const recommendationsHtml = results.recommendations.map(rec => `
+                <div class="flex items-start space-x-3 bg-gray-900 p-4 rounded-lg">
+                    <i class="fas fa-arrow-right text-blue-400 mt-1"></i>
+                    <p class="text-gray-100 text-lg">${rec}</p>
+                </div>
+            `).join('');
+            document.getElementById('recommendations').innerHTML = recommendationsHtml;
+
+            // Scroll to results
+            setTimeout(() => {
+                document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+            }, 500);
+        }
+
+        // Reset for new analysis
+        function resetAnalysis() {
+            location.reload();
+        }
+
+        // Logout function
+        async function logout() {
+            try {
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                });
+                
+                if (response.ok) {
+                    window.location.href = '/';
+                } else {
+                    alert('Logout failed. Please try again.');
+                }
+            } catch (error) {
+                alert('Network error during logout.');
+            }
+        }
+
+        // Fetch current user info on page load
+        async function fetchUserInfo() {
+            try {
+                const response = await fetch('/api/user/info');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const user = data.user;
+                    document.getElementById('userEmail').textContent = user.email;
+                    
+                    // Show admin link if user is admin
+                    if (user.is_admin) {
+                        document.getElementById('adminLink').classList.remove('hidden');
+                    }
+                } else {
+                    // If not authenticated, redirect to login
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('Error fetching user info:', error);
+                window.location.href = '/';
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchUserInfo();
+        });
+    </script>
+
+</body>
+</html>

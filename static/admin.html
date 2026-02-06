@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - AI Data Analyst</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold text-white mb-2">🔐 Admin Dashboard</h1>
+                <p class="text-gray-300" id="adminEmail">Loading...</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="/dashboard" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition">
+                    User Dashboard
+                </a>
+                <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold transition">
+                    Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-300 text-sm">Total Users</p>
+                        <p class="text-3xl font-bold text-white" id="totalUsers">0</p>
+                    </div>
+                    <div class="bg-blue-500/30 p-3 rounded-lg">
+                        <svg class="w-8 h-8 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-300 text-sm">Verified Users</p>
+                        <p class="text-3xl font-bold text-white" id="verifiedUsers">0</p>
+                    </div>
+                    <div class="bg-green-500/30 p-3 rounded-lg">
+                        <svg class="w-8 h-8 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-300 text-sm">Total Activities</p>
+                        <p class="text-3xl font-bold text-white" id="totalLogs">0</p>
+                    </div>
+                    <div class="bg-purple-500/30 p-3 rounded-lg">
+                        <svg class="w-8 h-8 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-300 text-sm">Logins (24h)</p>
+                        <p class="text-3xl font-bold text-white" id="recentLogins">0</p>
+                    </div>
+                    <div class="bg-yellow-500/30 p-3 rounded-lg">
+                        <svg class="w-8 h-8 text-yellow-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 mb-6">
+            <div class="flex border-b border-white/20">
+                <button onclick="showTab('users')" id="usersTab" class="px-6 py-4 text-white font-semibold border-b-2 border-blue-500">
+                    Users Management
+                </button>
+                <button onclick="showTab('logs')" id="logsTab" class="px-6 py-4 text-gray-300 hover:text-white font-semibold">
+                    Activity Logs
+                </button>
+            </div>
+        </div>
+
+        <!-- Users Tab -->
+        <div id="usersContent" class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-white">User Management</h2>
+                <button onclick="loadUsers()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition">
+                    🔄 Refresh
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-white/20">
+                            <th class="text-left py-3 px-4 text-gray-300 font-semibold">ID</th>
+                            <th class="text-left py-3 px-4 text-gray-300 font-semibold">Email</th>
+                            <th class="text-left py-3 px-4 text-gray-300 font-semibold">Phone</th>
+                            <th class="text-left py-3 px-4 text-gray-300 font-semibold">Verified</th>
+                            <th class="text-left py-3 px-4 text-gray-300 font-semibold">Admin</th>
+                            <th class="text-left py-3 px-4 text-gray-300 font-semibold">Created</th>
+                            <th class="text-left py-3 px-4 text-gray-300 font-semibold">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <tr>
+                            <td colspan="7" class="text-center py-8 text-gray-400">Loading users...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Users Pagination -->
+            <div class="flex justify-between items-center mt-6">
+                <div class="text-gray-300">
+                    Showing <span id="usersRangeStart">0</span> to <span id="usersRangeEnd">0</span> of <span id="usersTotalCount">0</span> users
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="prevUsersPage()" id="usersPrevBtn" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        ← Previous
+                    </button>
+                    <span class="text-white px-4 py-2">Page <span id="usersCurrentPage">1</span></span>
+                    <button onclick="nextUsersPage()" id="usersNextBtn" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        Next →
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs Tab -->
+        <div id="logsContent" class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-white">Activity Logs</h2>
+                <div class="flex gap-4">
+                    <select id="activityTypeFilter" onchange="logsPage = 1; loadLogs(1);" class="bg-gray-800 text-white px-4 py-2 rounded-lg border border-white/20">
+                        <option value="">All Activity Types</option>
+                        <option value="LOGIN">Login</option>
+                        <option value="LOGOUT">Logout</option>
+                        <option value="SIGNUP">Signup</option>
+                        <option value="FILE_UPLOAD">File Upload</option>
+                        <option value="DATA_ANALYSIS">Data Analysis</option>
+                    </select>
+                    <button onclick="loadLogs()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition">
+                        🔄 Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-white/20">
+                            <th class="text-left py-3 px-4 text-gray-300 font-semibold">ID</th>
+                            <th class="text-left py-3 px-4 text-gray-300 font-semibold">User</th>
+                            <th class="text-left py-3 px-4 text-gray-300 font-semibold">Activity</th>
+                            <th class="text-left py-3 px-4 text-gray-300 font-semibold">Description</th>
+                            <th class="text-left py-3 px-4 text-gray-300 font-semibold">Status</th>
+                            <th class="text-left py-3 px-4 text-gray-300 font-semibold">IP Address</th>
+                            <th class="text-left py-3 px-4 text-gray-300 font-semibold">Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                        <tr>
+                            <td colspan="7" class="text-center py-8 text-gray-400">Loading logs...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Logs Pagination -->
+            <div class="flex justify-between items-center mt-6">
+                <div class="text-gray-300">
+                    Showing <span id="logsRangeStart">0</span> to <span id="logsRangeEnd">0</span> of <span id="logsTotalCount">0</span> logs
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="prevLogsPage()" id="logsPrevBtn" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        ← Previous
+                    </button>
+                    <span class="text-white px-4 py-2">Page <span id="logsCurrentPage">1</span></span>
+                    <button onclick="nextLogsPage()" id="logsNextBtn" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        Next →
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50">
+        <div class="bg-gray-900 rounded-xl p-8 max-w-md w-full mx-4 border border-white/20">
+            <h3 class="text-2xl font-bold text-white mb-6">Edit User</h3>
+            <div class="space-y-4">
+                <p class="text-gray-300" id="editUserEmail"></p>
+                
+                <div class="flex items-center justify-between bg-white/5 p-4 rounded-lg">
+                    <span class="text-white">Verified Status</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="editUserVerified" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+
+                <div class="flex items-center justify-between bg-white/5 p-4 rounded-lg">
+                    <span class="text-white">Admin Status</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="editUserAdmin" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+
+                <div class="flex gap-4 mt-6">
+                    <button onclick="saveUserChanges()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition">
+                        Save Changes
+                    </button>
+                    <button onclick="closeEditModal()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold transition">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentEditUserId = null;
+        
+        // Pagination state
+        let usersPage = 1;
+        let logsPage = 1;
+        const ITEMS_PER_PAGE = 10;
+        let usersTotalPages = 1;
+        let logsTotalPages = 1;
+
+        // Check authentication on page load
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/admin/stats');
+                if (response.status === 403) {
+                    alert('Admin access required');
+                    window.location.href = '/';
+                    return;
+                }
+                if (!response.ok) {
+                    window.location.href = '/';
+                    return;
+                }
+                loadStats();
+                loadUsers();
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = '/';
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/admin/stats');
+                if (!response.ok) throw new Error('Failed to load stats');
+                
+                const data = await response.json();
+                const stats = data.stats;
+                
+                document.getElementById('totalUsers').textContent = stats.total_users;
+                document.getElementById('verifiedUsers').textContent = stats.verified_users;
+                document.getElementById('totalLogs').textContent = stats.total_logs;
+                document.getElementById('recentLogins').textContent = stats.recent_logins_24h;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function loadUsers(page = 1) {
+            try {
+                usersPage = page;
+                const skip = (page - 1) * ITEMS_PER_PAGE;
+                const response = await fetch(`/api/admin/users?limit=${ITEMS_PER_PAGE}&skip=${skip}`);
+                if (!response.ok) throw new Error('Failed to load users');
+                
+                const data = await response.json();
+                const tbody = document.getElementById('usersTableBody');
+                
+                // Update pagination info
+                usersTotalPages = Math.ceil(data.total / ITEMS_PER_PAGE);
+                document.getElementById('usersTotalCount').textContent = data.total;
+                document.getElementById('usersCurrentPage').textContent = page;
+                document.getElementById('usersRangeStart').textContent = data.total > 0 ? skip + 1 : 0;
+                document.getElementById('usersRangeEnd').textContent = Math.min(skip + ITEMS_PER_PAGE, data.total);
+                
+                // Update button states
+                document.getElementById('usersPrevBtn').disabled = page === 1;
+                document.getElementById('usersNextBtn').disabled = page >= usersTotalPages;
+                
+                if (data.users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-400">No users found</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = data.users.map(user => `
+                    <tr class="border-b border-white/10 hover:bg-white/5">
+                        <td class="py-3 px-4 text-white">${user.id}</td>
+                        <td class="py-3 px-4 text-white">${user.email}</td>
+                        <td class="py-3 px-4 text-gray-300">${user.phone}</td>
+                        <td class="py-3 px-4">
+                            ${user.is_verified 
+                                ? '<span class="bg-green-500/20 text-green-300 px-3 py-1 rounded-full text-sm">✓ Verified</span>'
+                                : '<span class="bg-yellow-500/20 text-yellow-300 px-3 py-1 rounded-full text-sm">⚠ Pending</span>'
+                            }
+                        </td>
+                        <td class="py-3 px-4">
+                            ${user.is_admin 
+                                ? '<span class="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm">👑 Admin</span>'
+                                : '<span class="bg-gray-500/20 text-gray-300 px-3 py-1 rounded-full text-sm">User</span>'
+                            }
+                        </td>
+                        <td class="py-3 px-4 text-gray-300">${new Date(user.created_at).toLocaleDateString()}</td>
+                        <td class="py-3 px-4">
+                            <button onclick="editUser(${user.id}, '${user.email}', ${user.is_verified}, ${user.is_admin})" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm mr-2">
+                                Edit
+                            </button>
+                            <button onclick="deleteUser(${user.id}, '${user.email}')" 
+                                class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('usersTableBody').innerHTML = 
+                    '<tr><td colspan="7" class="text-center py-8 text-red-400">Error loading users</td></tr>';
+            }
+        }
+
+        async function loadLogs(page = 1) {
+            try {
+                logsPage = page;
+                const skip = (page - 1) * ITEMS_PER_PAGE;
+                const activityType = document.getElementById('activityTypeFilter').value;
+                const url = `/api/admin/logs?limit=${ITEMS_PER_PAGE}&skip=${skip}${activityType ? `&activity_type=${activityType}` : ''}`;
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Failed to load logs');
+                
+                const data = await response.json();
+                const tbody = document.getElementById('logsTableBody');
+                
+                // Update pagination info
+                logsTotalPages = Math.ceil(data.total / ITEMS_PER_PAGE);
+                document.getElementById('logsTotalCount').textContent = data.total;
+                document.getElementById('logsCurrentPage').textContent = page;
+                document.getElementById('logsRangeStart').textContent = data.total > 0 ? skip + 1 : 0;
+                document.getElementById('logsRangeEnd').textContent = Math.min(skip + ITEMS_PER_PAGE, data.total);
+                
+                // Update button states
+                document.getElementById('logsPrevBtn').disabled = page === 1;
+                document.getElementById('logsNextBtn').disabled = page >= logsTotalPages;
+                
+                if (data.logs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-400">No logs found</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = data.logs.map(log => {
+                    const statusColor = log.status === 'SUCCESS' ? 'green' : 
+                                       log.status === 'FAILED' ? 'yellow' : 'red';
+                    
+                    return `
+                        <tr class="border-b border-white/10 hover:bg-white/5">
+                            <td class="py-3 px-4 text-white">${log.id}</td>
+                            <td class="py-3 px-4 text-gray-300">${log.email || 'N/A'}</td>
+                            <td class="py-3 px-4">
+                                <span class="bg-blue-500/20 text-blue-300 px-2 py-1 rounded text-xs">
+                                    ${log.activity_type}
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 text-gray-300 max-w-xs truncate">${log.description}</td>
+                            <td class="py-3 px-4">
+                                <span class="bg-${statusColor}-500/20 text-${statusColor}-300 px-2 py-1 rounded text-xs">
+                                    ${log.status}
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 text-gray-300">${log.ip_address || 'N/A'}</td>
+                            <td class="py-3 px-4 text-gray-300">${new Date(log.created_at).toLocaleString()}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading logs:', error);
+                document.getElementById('logsTableBody').innerHTML = 
+                    '<tr><td colspan="7" class="text-center py-8 text-red-400">Error loading logs</td></tr>';
+            }
+        }
+
+        function showTab(tab) {
+            if (tab === 'users') {
+                document.getElementById('usersContent').classList.remove('hidden');
+                document.getElementById('logsContent').classList.add('hidden');
+                document.getElementById('usersTab').classList.add('border-blue-500', 'text-white');
+                document.getElementById('usersTab').classList.remove('text-gray-300');
+                document.getElementById('logsTab').classList.remove('border-blue-500', 'text-white');
+                document.getElementById('logsTab').classList.add('text-gray-300');
+                loadUsers();
+            } else {
+                document.getElementById('usersContent').classList.add('hidden');
+                document.getElementById('logsContent').classList.remove('hidden');
+                document.getElementById('logsTab').classList.add('border-blue-500', 'text-white');
+                document.getElementById('logsTab').classList.remove('text-gray-300');
+                document.getElementById('usersTab').classList.remove('border-blue-500', 'text-white');
+                document.getElementById('usersTab').classList.add('text-gray-300');
+                loadLogs();
+            }
+        }
+
+        function editUser(id, email, isVerified, isAdmin) {
+            currentEditUserId = id;
+            document.getElementById('editUserEmail').textContent = email;
+            document.getElementById('editUserVerified').checked = isVerified;
+            document.getElementById('editUserAdmin').checked = isAdmin;
+            document.getElementById('editUserModal').classList.remove('hidden');
+            document.getElementById('editUserModal').classList.add('flex');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editUserModal').classList.add('hidden');
+            document.getElementById('editUserModal').classList.remove('flex');
+            currentEditUserId = null;
+        }
+
+        async function saveUserChanges() {
+            if (!currentEditUserId) return;
+            
+            const isVerified = document.getElementById('editUserVerified').checked;
+            const isAdmin = document.getElementById('editUserAdmin').checked;
+            
+            try {
+                const response = await fetch(`/api/admin/users/${currentEditUserId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        is_verified: isVerified,
+                        is_admin: isAdmin
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Failed to update user');
+                
+                alert('User updated successfully!');
+                closeEditModal();
+                loadUsers();
+                loadStats();
+            } catch (error) {
+                console.error('Error updating user:', error);
+                alert('Failed to update user: ' + error.message);
+            }
+        }
+
+        async function deleteUser(id, email) {
+            if (!confirm(`Are you sure you want to delete user ${email}?`)) return;
+            
+            try {
+                const response = await fetch(`/api/admin/users/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) throw new Error('Failed to delete user');
+                
+                alert('User deleted successfully!');
+                loadUsers();
+                loadStats();
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                alert('Failed to delete user: ' + error.message);
+            }
+        }
+
+        async function logout() {
+            try {
+                await fetch('/api/auth/logout', { method: 'POST' });
+                window.location.href = '/';
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+
+        // Pagination functions for Users
+        function nextUsersPage() {
+            if (usersPage < usersTotalPages) {
+                loadUsers(usersPage + 1);
+            }
+        }
+
+        function prevUsersPage() {
+            if (usersPage > 1) {
+                loadUsers(usersPage - 1);
+            }
+        }
+
+        // Pagination functions for Logs
+        function nextLogsPage() {
+            if (logsPage < logsTotalPages) {
+                loadLogs(logsPage + 1);
+            }
+        }
+
+        function prevLogsPage() {
+            if (logsPage > 1) {
+                loadLogs(logsPage - 1);
+            }
+        }
+
+        // Initialize
+        checkAuth();
+    </script>
+</body>
+</html>
