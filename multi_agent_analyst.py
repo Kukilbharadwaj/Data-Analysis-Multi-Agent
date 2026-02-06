@@ -294,6 +294,151 @@ Keep each bullet point to 1-2 sentences. Be concrete and actionable."""
     return state
 
 
+def generate_dashboard_data(df: pd.DataFrame, quality_report: dict) -> dict:
+    """Generate dashboard-ready chart data for visualization"""
+    import numpy as np
+    
+    dashboard = {
+        "charts": [],
+        "metrics": [],
+        "data_quality_viz": {}
+    }
+    
+    # Helper function to convert to native Python types
+    def to_native(val):
+        """Convert numpy/pandas types to native Python types"""
+        if isinstance(val, (np.integer, np.int64, np.int32)):
+            return int(val)
+        elif isinstance(val, (np.floating, np.float64, np.float32)):
+            return float(val)
+        elif isinstance(val, np.ndarray):
+            return val.tolist()
+        elif pd.isna(val):
+            return None
+        return val
+    
+    # 1. Key Metrics Cards
+    dashboard["metrics"] = [
+        {"label": "Total Rows", "value": f"{len(df):,}", "icon": "database", "color": "blue"},
+        {"label": "Columns", "value": int(len(df.columns)), "icon": "columns", "color": "green"},
+        {"label": "Duplicates Removed", "value": int(quality_report['data_quality'].get('duplicates_removed', 0)), "icon": "trash", "color": "yellow"},
+        {"label": "Data Quality", "value": "Good" if quality_report['data_quality'].get('duplicates_removed', 0) < len(df) * 0.1 else "Fair", "icon": "check-circle", "color": "purple"}
+    ]
+    
+    # 2. Column Data Types Distribution (Pie Chart)
+    type_counts = df.dtypes.value_counts().to_dict()
+    type_names = [str(k) for k in type_counts.keys()]
+    type_values = list(type_counts.values())
+    
+    dashboard["charts"].append({
+        "id": "dataTypesPie",
+        "type": "pie",
+        "title": "Column Data Types Distribution",
+        "labels": type_names,
+        "data": type_values,
+        "colors": ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"]
+    })
+    
+    # 3. Missing Values Bar Chart
+    missing_data = df.isnull().sum()
+    missing_cols = missing_data[missing_data > 0].head(10)
+    
+    if len(missing_cols) > 0:
+        dashboard["charts"].append({
+            "id": "missingValuesBar",
+            "type": "bar",
+            "title": "Missing Values by Column",
+            "labels": [str(x) for x in missing_cols.index.tolist()],
+            "data": [int(x) for x in missing_cols.values.tolist()],
+            "color": "#EF4444"
+        })
+    
+    # 4. Numeric Columns Distribution (for first 3 numeric columns)
+    numeric_cols = df.select_dtypes(include=['number']).columns[:3]
+    
+    for idx, col in enumerate(numeric_cols):
+        try:
+            # Create histogram data
+            hist_data, bin_edges = pd.cut(df[col].dropna(), bins=10, retbins=True, duplicates='drop')
+            value_counts = hist_data.value_counts().sort_index()
+            
+            # Create labels from bin edges
+            labels = [f"{bin_edges[i]:.1f}-{bin_edges[i+1]:.1f}" for i in range(len(value_counts))]
+            
+            dashboard["charts"].append({
+                "id": f"distribution{idx}",
+                "type": "bar",
+                "title": f"Distribution of {col}",
+                "labels": labels,
+                "data": [int(x) for x in value_counts.values.tolist()],
+                "color": ["#3B82F6", "#10B981", "#F59E0B"][idx]
+            })
+        except:
+            pass  # Skip if histogram creation fails
+    
+    # 5. Top Values for Categorical Columns (first 2)
+    categorical_cols = df.select_dtypes(include=['object']).columns[:2]
+    
+    for idx, col in enumerate(categorical_cols):
+        try:
+            top_values = df[col].value_counts().head(8)
+            
+            dashboard["charts"].append({
+                "id": f"topValues{idx}",
+                "type": "horizontalBar",
+                "title": f"Top Values in {col}",
+                "labels": [str(x) for x in top_values.index.tolist()],
+                "data": [int(x) for x in top_values.values.tolist()],
+                "color": ["#8B5CF6", "#EC4899"][idx]
+            })
+        except:
+            pass
+    
+    # 6. Data Quality Summary (Doughnut Chart)
+    total_cells = len(df) * len(df.columns)
+    missing_cells = int(df.isnull().sum().sum())
+    filled_cells = int(total_cells - missing_cells)
+    
+    dashboard["data_quality_viz"] = {
+        "id": "dataQualityDoughnut",
+        "type": "doughnut",
+        "title": "Overall Data Completeness",
+        "labels": ["Complete Data", "Missing Data"],
+        "data": [filled_cells, missing_cells],
+        "colors": ["#10B981", "#EF4444"]
+    }
+    
+    # 7. Correlation Matrix (if we have numeric columns)
+    numeric_df = df.select_dtypes(include=['number'])
+    if len(numeric_df.columns) >= 2:
+        corr_matrix = numeric_df.corr()
+        # Get top 5 correlations (excluding diagonal)
+        corr_pairs = []
+        for i in range(len(corr_matrix.columns)):
+            for j in range(i+1, len(corr_matrix.columns)):
+                corr_val = float(abs(corr_matrix.iloc[i, j]))
+                corr_pairs.append({
+                    "pair": f"{corr_matrix.columns[i]} vs {corr_matrix.columns[j]}",
+                    "correlation": corr_val
+                })
+        
+        # Sort by correlation strength
+        corr_pairs.sort(key=lambda x: x["correlation"], reverse=True)
+        top_correlations = corr_pairs[:5]
+        
+        if top_correlations:
+            dashboard["charts"].append({
+                "id": "correlationBar",
+                "type": "bar",
+                "title": "Top Column Correlations",
+                "labels": [str(p["pair"]) for p in top_correlations],
+                "data": [float(p["correlation"]) for p in top_correlations],
+                "color": "#06B6D4"
+            })
+    
+    return dashboard
+
+
 def extract_user_friendly_summary(state: AnalysisState, dataset_path: str) -> dict:
     """Extract clean, user-friendly summary from analysis results"""
     
@@ -573,6 +718,14 @@ Quality: {quality_report['data_quality'].get('duplicates_removed', 0)} duplicate
         "outliers_columns": list(quality_report['data_quality'].get('outliers', {}).keys()),
         "file_encoding": quality_report['file_info'].get('encoding', 'UTF-8')
     }
+    
+    # Generate dashboard data for visualizations
+    try:
+        dashboard_data = generate_dashboard_data(df, quality_report)
+        user_summary['dashboard'] = dashboard_data
+    except Exception as e:
+        print(f"Dashboard generation warning: {str(e)}")
+        user_summary['dashboard'] = {"charts": [], "metrics": []}
     
     yield {
         "type": "complete",

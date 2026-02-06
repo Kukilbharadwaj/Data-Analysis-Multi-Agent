@@ -6,6 +6,7 @@
     <title>Multi-Agent AI Data Analyst Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         .progress-bar {
             transition: width 0.3s ease;
@@ -139,6 +140,22 @@
                 </div>
             </div>
 
+            <!-- Dashboard Metrics Cards -->
+            <div id="metricsCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6 fade-in">
+                <!-- Metrics will be dynamically inserted here -->
+            </div>
+
+            <!-- Dashboard Charts Section -->
+            <div class="bg-gray-800 bg-opacity-50 backdrop-blur-lg rounded-xl p-8 mb-6 border border-gray-700 fade-in">
+                <h2 class="text-2xl font-bold mb-6 flex items-center">
+                    <i class="fas fa-chart-bar mr-3 text-purple-400"></i>
+                    Visual Analytics Dashboard
+                </h2>
+                <div id="dashboardCharts" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Charts will be dynamically inserted here -->
+                </div>
+            </div>
+
             <!-- Key Findings -->
             <div class="bg-gray-800 bg-opacity-50 backdrop-blur-lg rounded-xl p-8 mb-6 border border-gray-700 fade-in">
                 <h2 class="text-2xl font-bold mb-6 flex items-center">
@@ -254,27 +271,36 @@
             const eventSource = new EventSource(`/api/analyze/${currentFilename}`);
 
             eventSource.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                
-                if (data.type === 'start') {
-                    updateProgress(5, 'Initializing analysis...');
-                }
-                else if (data.type === 'progress') {
-                    const progress = (data.step / data.total_steps) * 100;
-                    updateProgress(progress, data.message);
-                }
-                else if (data.type === 'complete') {
-                    updateProgress(100, 'Analysis complete!');
-                    displayResults(data.results);
-                    eventSource.close();
-                }
-                else if (data.type === 'error') {
-                    alert('Error: ' + data.message);
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'start') {
+                        updateProgress(5, 'Initializing analysis...');
+                    }
+                    else if (data.type === 'progress') {
+                        const progress = (data.step / data.total_steps) * 100;
+                        updateProgress(progress, data.message);
+                    }
+                    else if (data.type === 'complete') {
+                        updateProgress(100, 'Analysis complete!');
+                        displayResults(data.results);
+                        eventSource.close();
+                    }
+                    else if (data.type === 'error') {
+                        alert('Error: ' + data.message);
+                        eventSource.close();
+                    }
+                } catch (error) {
+                    console.error('JSON Parse Error:', error);
+                    console.error('Raw data:', event.data);
+                    alert('Error parsing response: ' + error.message);
                     eventSource.close();
                 }
             };
 
-            eventSource.onerror = () => {
+            eventSource.onerror = (error) => {
+                console.error('EventSource error:', error);
+                alert('Connection error occurred');
                 eventSource.close();
             };
         }
@@ -309,33 +335,210 @@
 
         // Display results
         function displayResults(results) {
-            document.getElementById('resultsSection').classList.remove('hidden');
-            
-            // Dataset summary
-            document.getElementById('datasetSummary').textContent = results.dataset_summary;
-            
-            // Key findings as bullet points
-            const findingsHtml = results.key_findings.map(finding => `
-                <div class="flex items-start space-x-3 bg-gray-900 p-4 rounded-lg">
-                    <i class="fas fa-check-circle text-green-400 mt-1"></i>
-                    <p class="text-gray-100 text-lg">${finding}</p>
-                </div>
-            `).join('');
-            document.getElementById('keyFindings').innerHTML = findingsHtml;
-            
-            // Recommendations as bullet points
-            const recommendationsHtml = results.recommendations.map(rec => `
-                <div class="flex items-start space-x-3 bg-gray-900 p-4 rounded-lg">
-                    <i class="fas fa-arrow-right text-blue-400 mt-1"></i>
-                    <p class="text-gray-100 text-lg">${rec}</p>
-                </div>
-            `).join('');
-            document.getElementById('recommendations').innerHTML = recommendationsHtml;
+            try {
+                document.getElementById('resultsSection').classList.remove('hidden');
+                
+                // Dataset summary
+                document.getElementById('datasetSummary').textContent = results.dataset_summary || 'Analysis Complete';
+                
+                // Render Dashboard Metrics Cards
+                if (results.dashboard && results.dashboard.metrics) {
+                    renderMetricsCards(results.dashboard.metrics);
+                } else {
+                    console.warn('No dashboard metrics available');
+                }
+                
+                // Render Dashboard Charts
+                if (results.dashboard && results.dashboard.charts) {
+                    renderDashboardCharts(results.dashboard);
+                } else {
+                    console.warn('No dashboard charts available');
+                }
+                
+                // Key findings as bullet points
+                const findingsHtml = (results.key_findings || []).map(finding => `
+                    <div class="flex items-start space-x-3 bg-gray-900 p-4 rounded-lg">
+                        <i class="fas fa-check-circle text-green-400 mt-1"></i>
+                        <p class="text-gray-100 text-lg">${finding}</p>
+                    </div>
+                `).join('');
+                document.getElementById('keyFindings').innerHTML = findingsHtml || '<p class="text-gray-400">No findings available</p>';
+                
+                // Recommendations as bullet points
+                const recommendationsHtml = (results.recommendations || []).map(rec => `
+                    <div class="flex items-start space-x-3 bg-gray-900 p-4 rounded-lg">
+                        <i class="fas fa-arrow-right text-blue-400 mt-1"></i>
+                        <p class="text-gray-100 text-lg">${rec}</p>
+                    </div>
+                `).join('');
+                document.getElementById('recommendations').innerHTML = recommendationsHtml || '<p class="text-gray-400">No recommendations available</p>';
 
-            // Scroll to results
-            setTimeout(() => {
-                document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
-            }, 500);
+                // Scroll to results
+                setTimeout(() => {
+                    document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+                }, 500);
+            } catch (error) {
+                console.error('Error displaying results:', error);
+                alert('Error displaying results: ' + error.message);
+            }
+        }
+
+        // Render Metrics Cards
+        function renderMetricsCards(metrics) {
+            const colorMap = {
+                blue: 'from-blue-500 to-blue-600',
+                green: 'from-green-500 to-green-600',
+                yellow: 'from-yellow-500 to-yellow-600',
+                purple: 'from-purple-500 to-purple-600',
+                red: 'from-red-500 to-red-600'
+            };
+            
+            const metricsHtml = metrics.map(metric => `
+                <div class="bg-gradient-to-br ${colorMap[metric.color] || 'from-gray-500 to-gray-600'} rounded-xl p-6 shadow-lg transform transition hover:scale-105">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-200 text-sm font-medium">${metric.label}</p>
+                            <p class="text-3xl font-bold text-white mt-2">${metric.value}</p>
+                        </div>
+                        <div class="bg-white bg-opacity-20 rounded-full p-4">
+                            <i class="fas fa-${metric.icon} text-2xl text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('metricsCards').innerHTML = metricsHtml;
+        }
+
+        // Render Dashboard Charts
+        let chartInstances = [];
+        
+        function renderDashboardCharts(dashboard) {
+            try {
+                // Clear previous charts
+                chartInstances.forEach(chart => {
+                    try {
+                        chart.destroy();
+                    } catch (e) {
+                        console.warn('Error destroying chart:', e);
+                    }
+                });
+                chartInstances = [];
+                
+                const chartsContainer = document.getElementById('dashboardCharts');
+                chartsContainer.innerHTML = '';
+                
+                // Render all charts
+                const allCharts = [...(dashboard.charts || [])];
+                if (dashboard.data_quality_viz && dashboard.data_quality_viz.data) {
+                    allCharts.push(dashboard.data_quality_viz);
+                }
+                
+                if (allCharts.length === 0) {
+                    chartsContainer.innerHTML = '<p class="text-gray-400 text-center col-span-2">No charts available for this dataset</p>';
+                    return;
+                }
+                
+                allCharts.forEach((chartData, index) => {
+                    try {
+                        const chartDiv = document.createElement('div');
+                        chartDiv.className = 'bg-gray-900 p-6 rounded-lg';
+                        chartDiv.innerHTML = `
+                            <h3 class="text-lg font-semibold mb-4 text-gray-200">${chartData.title || 'Chart'}</h3>
+                            <canvas id="${chartData.id}"></canvas>
+                        `;
+                        chartsContainer.appendChild(chartDiv);
+                        
+                        // Create chart with delay for smooth rendering
+                        setTimeout(() => {
+                            try {
+                                const ctx = document.getElementById(chartData.id);
+                                if (ctx) {
+                                    const chart = createChart(ctx.getContext('2d'), chartData);
+                                    chartInstances.push(chart);
+                                }
+                            } catch (e) {
+                                console.error(`Error creating chart ${chartData.id}:`, e);
+                            }
+                        }, 100 * index);
+                    } catch (e) {
+                        console.error('Error creating chart div:', e);
+                    }
+                });
+            } catch (error) {
+                console.error('Error rendering dashboard charts:', error);
+            }
+        }
+
+        // Create Chart with Chart.js
+        function createChart(ctx, chartData) {
+            try {
+                const chartType = chartData.type === 'horizontalBar' ? 'bar' : chartData.type;
+                
+                // Ensure data arrays are valid
+                const labels = chartData.labels || [];
+                const data = chartData.data || [];
+                
+                if (labels.length === 0 || data.length === 0) {
+                    console.warn(`Chart ${chartData.id} has no data`);
+                    return null;
+                }
+                
+                const config = {
+                    type: chartType,
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: chartData.title || 'Data',
+                            data: data,
+                            backgroundColor: Array.isArray(chartData.colors) 
+                                ? chartData.colors 
+                                : chartData.color || '#3B82F6',
+                            borderColor: Array.isArray(chartData.colors) 
+                                ? chartData.colors 
+                                : chartData.color || '#3B82F6',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        indexAxis: chartData.type === 'horizontalBar' ? 'y' : 'x',
+                        plugins: {
+                            legend: {
+                                display: chartType === 'pie' || chartType === 'doughnut',
+                                labels: {
+                                    color: '#E5E7EB'
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: '#fff',
+                                bodyColor: '#fff'
+                            }
+                        },
+                        scales: chartType !== 'pie' && chartType !== 'doughnut' ? {
+                            x: {
+                                ticks: { 
+                                    color: '#9CA3AF',
+                                    maxRotation: 45,
+                                    minRotation: 0
+                                },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            },
+                            y: {
+                                ticks: { color: '#9CA3AF' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            }
+                        } : {}
+                    }
+                };
+                
+                return new Chart(ctx, config);
+            } catch (error) {
+                console.error('Error creating Chart.js instance:', error);
+                return null;
+            }
         }
 
         // Reset for new analysis
